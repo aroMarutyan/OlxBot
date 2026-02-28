@@ -16,11 +16,11 @@ describe('search-handler.service', () => {
     const { getTableName, getSearchParams } = await import('../../../src/services/search-handler.service.js');
 
     expect(getTableName()).toEqual({ TableName: 'search-table' });
-    expect(getSearchParams('101')).toEqual({
+    expect(getSearchParams('101', '123')).toEqual({
       TableName: 'search-table',
-      Key: { searchId: '101' }
+      Key: { searchId: '101', chatId: '123' }
     });
-    expect(marshall).toHaveBeenCalledWith({ searchId: '101' });
+    expect(marshall).toHaveBeenCalledWith({ searchId: '101', chatId: '123' });
   });
 
   it('maps new values for active, numeric and empty values', async () => {
@@ -28,7 +28,7 @@ describe('search-handler.service', () => {
 
     expect(handleNewValue('active', 'yes')).toBe(true);
     expect(handleNewValue('active', '0')).toBe(false);
-    expect(handleNewValue('range', '25')).toBe('25');
+    expect(handleNewValue('minPrice', '25')).toBe('25');
     expect(handleNewValue('alias')).toBe('');
   });
 
@@ -42,9 +42,9 @@ describe('search-handler.service', () => {
   it('handles numeric validation and parameter count checks', async () => {
     const { handleNumericInput, validateNumericParam, validateParamCount } = await import('../../../src/services/search-handler.service.js');
 
-    expect(handleNumericInput(undefined, 'range')).toBe('');
-    expect(validateNumericParam('15', 'range')).toBe('15');
-    expect(() => validateNumericParam('abc', 'range')).toThrow('range: abc is not a valid number');
+    expect(handleNumericInput(undefined, 'minPrice')).toBe('');
+    expect(validateNumericParam('15', 'minPrice')).toBe('15');
+    expect(() => validateNumericParam('abc', 'minPrice')).toThrow('minPrice: abc is not a valid number');
     expect(() => validateParamCount(['/ns'], 3, 'create', 'a and b')).toThrow('Not enough params to create search');
   });
 

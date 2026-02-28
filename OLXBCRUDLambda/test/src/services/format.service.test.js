@@ -23,10 +23,10 @@ describe('format.service', () => {
   });
 
   it('filters unknown conditions and trims values', () => {
-    expect(Array.from(formatConditions('new, invalid, fair '))).toEqual(['new', 'fair']);
+    expect(Array.from(formatConditions('new, invalid, used '))).toEqual(['new', 'used']);
   });
 
-  it('prioritizes all condition when provided in list', () => {
-    expect(Array.from(formatConditions('new,all,fair'))).toEqual(['']);
+  it('falls back to all when only unknown conditions are provided', () => {
+    expect(Array.from(formatConditions('invalid,all,fair'))).toEqual([]);
   });
 });
