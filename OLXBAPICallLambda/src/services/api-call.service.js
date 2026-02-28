@@ -65,9 +65,9 @@ function buildRequestBody(search) {
   search.minPrice && searchParameters.push({ key: 'filter_float_price:from', value: search.minPrice });
   search.maxPrice && searchParameters.push({ key: 'filter_float_price:to', value: search.maxPrice });
 
-  const conditionsArray = Array.from(search.condition ?? ['']);
+  const conditionsArray = Array.from(search.condition ?? []).filter(Boolean);
 
-  if (conditionsArray[0] !== '') {
+  if (conditionsArray.length > 0) {
     conditionsArray.forEach((condition, idx) => {
       searchParameters.push({ key: `filter_enum_state[${idx}]`, value: condition });
     });
