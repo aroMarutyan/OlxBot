@@ -24,8 +24,7 @@ describe('firstCall', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue({
-        data: { section: { payload: { items } } },
-        meta: { next_page: 'next-hash' }
+        data: { clientCompatibleListings: { data: items } }
       })
     });
 
@@ -37,66 +36,19 @@ describe('firstCall', () => {
     expect(result).toEqual(items);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    const calledUrl = fetchMock.mock.calls[0][0];
-    expect(calledUrl.searchParams.get('keywords')).toBe('bike');
-    expect(calledUrl.searchParams.get('min_sale_price')).toBe('50');
-    expect(calledUrl.searchParams.get('max_sale_price')).toBe('300');
-    expect(calledUrl.searchParams.get('distance_in_km')).toBe('30');
-    expect(calledUrl.searchParams.get('condition')).toBe('new,as_good_as_new');
-  });
+    const [calledUrl, fetchOptions] = fetchMock.mock.calls[0];
+    expect(calledUrl.href).toBe('https://www.olx.bg/apigateway/graphql');
+    expect(fetchOptions.method).toBe('POST');
 
-  it('follows next pages until a non-empty page is found', async () => {
-    const finalItems = [{ id: 'last' }];
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          data: { section: { payload: { items: [] } } },
-          meta: { next_page: 'page-1' }
-        })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          data: { section: { payload: { items: [] } } },
-          meta: { next_page: 'page-2' }
-        })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          data: { section: { payload: { items: finalItems } } },
-          meta: { next_page: null }
-        })
-      });
-
-    vi.stubGlobal('fetch', fetchMock);
-
-    const result = await firstCall(createSearch({ condition: new Set(['']) }));
-
-    expect(result).toEqual(finalItems);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    const nextPageCallUrl = fetchMock.mock.calls[1][0];
-    expect(nextPageCallUrl.searchParams.get('next_page')).toBe('page-1');
-    expect(nextPageCallUrl.searchParams.get('source')).toBe('deep_link');
-  });
-
-  it('stops searching after max next page limit is reached', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        data: { section: { payload: { items: [] } } },
-        meta: { next_page: 'still-empty' }
-      })
-    });
-
-    vi.stubGlobal('fetch', fetchMock);
-
-    const result = await firstCall(createSearch({ condition: new Set(['']) }));
-
-    expect(result).toEqual([]);
-    expect(fetchMock).toHaveBeenCalledTimes(11);
+    const calledBody = JSON.parse(fetchOptions.body);
+    expect(calledBody.variables.searchParameters).toEqual(expect.arrayContaining([
+      { key: 'query', value: 'bike' },
+      { key: 'sort_by', value: 'created_at:desc' },
+      { key: 'filter_float_price:from', value: '50' },
+      { key: 'filter_float_price:to', value: '300' },
+      { key: 'filter_enum_state[0]', value: 'new' },
+      { key: 'filter_enum_state[1]', value: 'as_good_as_new' }
+    ]));
   });
 
   it('records fetch and first call errors when the API call fails', async () => {
@@ -115,8 +67,7 @@ describe('firstCall', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue({
-        data: { section: { payload: { items: [] } } },
-        meta: { next_page: null }
+        data: { clientCompatibleListings: { data: [] } }
       })
     });
 
@@ -128,35 +79,11 @@ describe('firstCall', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('records next page call error when a subsequent page fetch fails', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          data: { section: { payload: { items: [] } } },
-          meta: { next_page: 'page-1' }
-        })
-      })
-      .mockResolvedValueOnce({ ok: false, status: 429 });
-
-    vi.stubGlobal('fetch', fetchMock);
-
-    const result = await firstCall(createSearch({ condition: new Set(['']) }));
-
-    expect(result).toEqual([]);
-    expect(ERROR_SEARCHES_ARRAY.length).toBeGreaterThanOrEqual(1);
-    const nextPageError = ERROR_SEARCHES_ARRAY.find(e => e.errorType === 'next page call');
-    expect(nextPageError).toBeDefined();
-    expect(nextPageError.alias).toBe('mountain-bike');
-  });
-
   it('omits optional URL params when search has no minPrice, maxPrice, or range', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue({
-        data: { section: { payload: { items: [{ id: '1' }] } } },
-        meta: { next_page: null }
+        data: { clientCompatibleListings: { data: [{ id: '1' }] } }
       })
     });
 
@@ -165,10 +92,11 @@ describe('firstCall', () => {
     const search = createSearch({ minPrice: '', maxPrice: '', range: '', condition: new Set(['']) });
     await firstCall(search);
 
-    const calledUrl = fetchMock.mock.calls[0][0];
-    expect(calledUrl.searchParams.get('min_sale_price')).toBeNull();
-    expect(calledUrl.searchParams.get('max_sale_price')).toBeNull();
-    expect(calledUrl.searchParams.get('distance_in_km')).toBeNull();
-    expect(calledUrl.searchParams.get('condition')).toBeNull();
+    const fetchOptions = fetchMock.mock.calls[0][1];
+    const calledBody = JSON.parse(fetchOptions.body);
+    const bodyParams = calledBody.variables.searchParameters;
+    expect(bodyParams.find(param => param.key === 'filter_float_price:from')).toBeUndefined();
+    expect(bodyParams.find(param => param.key === 'filter_float_price:to')).toBeUndefined();
+    expect(bodyParams.find(param => param.key.startsWith('filter_enum_state['))).toBeUndefined();
   });
 });
