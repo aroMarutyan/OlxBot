@@ -27,9 +27,9 @@ describe('handler', () => {
     const { handler } = await import('../index.js');
     const crudService = await import('../src/services/db-crud.service.js');
 
-    const response = await handler({ body: JSON.stringify({ message: { text: command } }) });
+    const response = await handler({ body: JSON.stringify({ message: { text: command, chat: { id: 123 } } }) });
 
-    expect(crudService[methodName]).toHaveBeenCalledWith(command);
+    expect(crudService[methodName]).toHaveBeenCalledWith(command, '123');
     expect(response).toEqual({
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -41,7 +41,7 @@ describe('handler', () => {
     const { handler } = await import('../index.js');
     const { botResponse } = await import('../src/services/telegram-bot.service.js');
 
-    await handler({ body: JSON.stringify({ message: { text: '/help' } }) });
+    await handler({ body: JSON.stringify({ message: { text: '/help', chat: { id: 123 } } }) });
 
     expect(botResponse).toHaveBeenCalledTimes(1);
     expect(botResponse.mock.calls[0][0]).toContain('To check all searches');
@@ -51,7 +51,7 @@ describe('handler', () => {
     const { handler } = await import('../index.js');
     const { botResponse } = await import('../src/services/telegram-bot.service.js');
 
-    await handler({ body: JSON.stringify({ message: { text: '/unknown' } }) });
+    await handler({ body: JSON.stringify({ message: { text: '/unknown', chat: { id: 123 } } }) });
 
     expect(botResponse).toHaveBeenCalledWith('Unrecognized command. Type /help to get an overview of available commands');
   });

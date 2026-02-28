@@ -2,26 +2,28 @@ import { botResponse } from './src/services/telegram-bot.service.js';
 import { listSearches, getNewestResults, createNewSearch, updateSearch, deleteSearch } from './src/services/db-crud.service.js';
 
 export const handler = async (event) => {
-  const text = JSON.parse(event.body).message.text;
+  const message = JSON.parse(event.body).message;
+  const text = message.text;
+  const chatId = `${message.chat.id}`;
   switch (true) {
     case text.startsWith('/ls'):
-      await listSearches(text);
+      await listSearches(text, chatId);
       break;
 
     case text.startsWith('/gl'):
-      await getNewestResults(text);
+      await getNewestResults(text, chatId);
       break;
 
     case text.startsWith('/ns'):
-      await createNewSearch(text);
+      await createNewSearch(text, chatId);
       break;
 
     case text.startsWith('/us'):
-      await updateSearch(text);
+      await updateSearch(text, chatId);
       break;
 
     case text.startsWith('/ds'):
-      await deleteSearch(text);
+      await deleteSearch(text, chatId);
       break;
 
     case text.startsWith('/help'):
@@ -38,9 +40,9 @@ function helpText() {
   const intro = 'Placeholder text is in ALL CAPS\nActual commands are in camelCase\nEvery input should be followed by a new line, unless specified otherwise\n';
   const listSearches = 'To check all searches, input:\nREQUIRED: /ls\nOPTIONAL: activeOnly\n';
   const checkNewestResults = 'To check newest result(s), input: \nREQUIRED: /gl\nOPTIONAL: SEARCH ID\n';
-  const allowedConditions = 'OPTIONAL: CONDITION - separate conditions with comma\nfollowing conditions allowed:\nas_good_as_new, new\ngood, fair\nhas_given_it_all, all';
-  const createSearch = `To create new search, input:\nREQUIRED: /ns\nREQUIRED: SEARCH ALIAS\nREQUIRED: SEARCH TERM\nOPTIONAL: MINIMUM PRICE\nOPTIONAL: MAXIMUM SALE PRICE\nOPTIONAL: RANGE\n${allowedConditions}\n`;
-  const paramsToUpdate = 'Param names to update: active, alias, condition, minPrice, maxPrice, range, searchTerm.\nCondition should be updated in the same manner as when creating a new search!';
+  const allowedConditions = 'OPTIONAL: CONDITION - separate conditions with comma\nfollowing conditions allowed:\nnew, used';
+  const createSearch = `To create new search, input:\nREQUIRED: /ns\nREQUIRED: SEARCH ALIAS\nREQUIRED: SEARCH TERM\nOPTIONAL: MINIMUM PRICE\nOPTIONAL: MAXIMUM SALE PRICE\n${allowedConditions}\n`;
+  const paramsToUpdate = 'Param names to update: active, alias, condition, minPrice, maxPrice, searchTerm.\nCondition should be updated in the same manner as when creating a new search!';
   const updateSearch = `To update a search, input:\nREQUIRED: /us\nREQUIRED: SEARCH ID\nREQUIRED: PARAM TO CHANGE\nOPTIONAL: NEW VALUE - dont put anything if you want to remove the param\nParams can be updated one at a time\n${paramsToUpdate}\n`;
 
   const deleteSearch = 'To delete search, input:\nREQUIRED: /ds\nREQUIRED: SEARCH ID\n';

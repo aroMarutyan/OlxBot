@@ -10,10 +10,10 @@ export function getTableName() {
   }
 }
 
-export function getSearchParams(searchId) {
+export function getSearchParams(searchId, chatId) {
   return {
     ...getTableName(),
-    Key: marshall({ searchId: searchId })
+    Key: marshall({ searchId: searchId, chatId: chatId })
   }
 }
 
@@ -28,7 +28,7 @@ export function handleNewValue(key, value) {
     case (!value):
       return '';
 
-    case (key === 'range' || key === 'minPrice' || key === 'maxPrice'):
+    case (key === 'minPrice' || key === 'maxPrice'):
       return validateNumericParam(value, key);
 
     default:
