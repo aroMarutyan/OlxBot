@@ -3,4 +3,48 @@ import { sendResultsToTelegram } from './src/services/telegram-bot.service.js';
 import { getSearches, updateSearchData } from './src/services/db-crud.service.js';
 import { ERROR_SEARCHES_ARRAY, displayCurrentInstanceErrors } from './src/services/api-call-error-handler.service.js';
 
-export const handler = async () => {};
+const MAX_NUMBER_OF_RESULTS = 5;
+
+export const handler = async () => {
+
+  const searches = (await getSearches()).filter(search => search.active);
+
+  for (const search of searches) {
+    const results = await firstCall(search);
+    await handleResults(search, results);
+  }
+
+  await displayCurrentInstanceErrors();
+
+  return finalizeLambda();
+};
+
+async function handleResults(search, results) {
+  if (!results.length) return;
+
+  const newestResults = getNewestResults(results, search?.newestOffer?.offerId, search?.newestOffer?.modified);
+  
+  if (newestResults.length) {
+    await updateSearchData(search.searchId, newestResults[0]);
+    await sendResultsToTelegram(newestResults);
+  }
+}
+
+function getNewestResults(results, newestOfferId, lastModified) {
+  if (results.findIndex(result => result?.id === newestOfferId) === -1) return [results[0]];
+
+  const newestResults = results 
+    .sort((a, b) => b.modified_at - a.modified_at)
+    .filter(item => item.modified_at > lastModified)
+    .slice(0, MAX_NUMBER_OF_RESULTS);
+
+  return newestResults;
+}
+
+function finalizeLambda() {
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ok: true })
+  };
+}
