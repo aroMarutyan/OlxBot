@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../src/services/api-call.service.js', () => ({
-  firstCall: vi.fn()
+  request: vi.fn()
 }));
 vi.mock('../src/services/telegram-bot.service.js', () => ({
   sendResultsToTelegram: vi.fn()
@@ -16,7 +16,7 @@ vi.mock('../src/services/api-call-error-handler.service.js', () => ({
 }));
 
 import { handler } from '../index.js';
-import { firstCall } from '../src/services/api-call.service.js';
+import { request } from '../src/services/api-call.service.js';
 import { getSearches, updateSearchData } from '../src/services/db-crud.service.js';
 import { sendResultsToTelegram } from '../src/services/telegram-bot.service.js';
 import { displayCurrentInstanceErrors } from '../src/services/api-call-error-handler.service.js';
@@ -31,12 +31,12 @@ describe('handler', () => {
       { searchId: 'active-1', alias: 'a', active: true },
       { searchId: 'inactive-1', alias: 'b', active: false }
     ]);
-    firstCall.mockResolvedValue([]);
+    request.mockResolvedValue([]);
 
     const response = await handler();
 
-    expect(firstCall).toHaveBeenCalledTimes(1);
-    expect(firstCall).toHaveBeenCalledWith({ searchId: 'active-1', alias: 'a', active: true });
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith({ searchId: 'active-1', alias: 'a', active: true });
     expect(updateSearchData).not.toHaveBeenCalled();
     expect(sendResultsToTelegram).not.toHaveBeenCalled();
     expect(displayCurrentInstanceErrors).toHaveBeenCalledTimes(1);
@@ -57,7 +57,7 @@ describe('handler', () => {
       }
     ]);
 
-    firstCall.mockResolvedValue([
+    request.mockResolvedValue([
       { id: 'known-offer', modified_at: 100 },
       { id: 'offer-2', modified_at: 210 },
       { id: 'offer-3', modified_at: 150 },
@@ -90,7 +90,7 @@ describe('handler', () => {
       }
     ]);
 
-    firstCall.mockResolvedValue([
+    request.mockResolvedValue([
       { id: 'new-offer-1', modified_at: 200 },
       { id: 'new-offer-2', modified_at: 300 }
     ]);
@@ -114,7 +114,7 @@ describe('handler', () => {
       }
     ]);
 
-    firstCall.mockResolvedValue([
+    request.mockResolvedValue([
       { id: 'known-offer', modified_at: 500 },
       { id: 'old-offer', modified_at: 400 }
     ]);
@@ -130,7 +130,7 @@ describe('handler', () => {
       { searchId: 'new-search', alias: 'first-time', active: true }
     ]);
 
-    firstCall.mockResolvedValue([
+    request.mockResolvedValue([
       { id: 'first-result', modified_at: 100 }
     ]);
 

@@ -1,4 +1,4 @@
-import { firstCall } from './src/services/api-call.service.js';
+import { request } from './src/services/api-call.service.js';
 import { sendResultsToTelegram } from './src/services/telegram-bot.service.js';
 import { getSearches, updateSearchData } from './src/services/db-crud.service.js';
 import { ERROR_SEARCHES_ARRAY, displayCurrentInstanceErrors } from './src/services/api-call-error-handler.service.js';
@@ -10,7 +10,7 @@ export const handler = async () => {
   const searches = (await getSearches()).filter(search => search.active);
 
   for (const search of searches) {
-    const results = await firstCall(search);
+    const results = await request(search);
     await handleResults(search, results);
   }
 

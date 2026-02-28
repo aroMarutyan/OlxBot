@@ -1,35 +1,15 @@
 import { SEARCH_URL, HEADERS } from '../config/url-config.js';
+import { SEARCH_QUERY } from '../config/search-query.js';
 import { ERROR_SEARCHES_ARRAY, createErrorSearchEntry } from './api-call-error-handler.service.js';
 
-const SEARCH_QUERY = `query ListingSearchQuery(
-  $searchParameters: [SearchParameter!] = []
-  $fetchJobSummary: Boolean = false
-  $fetchPayAndShip: Boolean = false
-) {
-  clientCompatibleListings(searchParameters: $searchParameters) {
-    __typename
-    ... on ListingSuccess {
-      data {
-        id
-        title
-        url
-        created_time
-        last_refresh_time
-        description
-      }
-    }
-  }
-}`;
-
-export async function firstCall(search) {
+export async function request(search) {
   const body = buildRequestBody(search);
   try {
     const res = await fetchSearchResults(body, search.alias);
     const items = res?.data?.clientCompatibleListings?.data;
     return Array.isArray(items) ? items : [];
   } catch(e) {
-    console.log('First call failed', e);
-    const errorEntry = createErrorSearchEntry(search.alias, 'first call');
+    const errorEntry = createErrorSearchEntry(search.alias, 'request');
     ERROR_SEARCHES_ARRAY.push(errorEntry);
     return [];
   }

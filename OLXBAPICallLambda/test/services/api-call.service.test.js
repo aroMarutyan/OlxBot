@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { firstCall } from '../../src/services/api-call.service.js';
+import { SEARCH_QUERY } from '../../src/config/search-query.js';
+import { request } from '../../src/services/api-call.service.js';
 import { ERROR_SEARCHES_ARRAY } from '../../src/services/api-call-error-handler.service.js';
 
 const createSearch = (overrides = {}) => ({
@@ -12,7 +13,7 @@ const createSearch = (overrides = {}) => ({
   ...overrides
 });
 
-describe('firstCall', () => {
+describe('request', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -31,7 +32,7 @@ describe('firstCall', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const search = createSearch();
-    const result = await firstCall(search);
+    const result = await request(search);
 
     expect(result).toEqual(items);
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -41,6 +42,7 @@ describe('firstCall', () => {
     expect(fetchOptions.method).toBe('POST');
 
     const calledBody = JSON.parse(fetchOptions.body);
+    expect(calledBody.query).toBe(SEARCH_QUERY);
     expect(calledBody.variables.searchParameters).toEqual(expect.arrayContaining([
       { key: 'query', value: 'bike' },
       { key: 'sort_by', value: 'created_at:desc' },
@@ -51,16 +53,16 @@ describe('firstCall', () => {
     ]));
   });
 
-  it('records fetch and first call errors when the API call fails', async () => {
+  it('records fetch and request errors when the API call fails', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500 });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await firstCall(createSearch());
+    const result = await request(createSearch());
 
     expect(result).toEqual([]);
     expect(ERROR_SEARCHES_ARRAY).toHaveLength(2);
     expect(ERROR_SEARCHES_ARRAY[0]).toMatchObject({ alias: 'mountain-bike', errorType: 'fetch', errorCode: 500 });
-    expect(ERROR_SEARCHES_ARRAY[1]).toMatchObject({ alias: 'mountain-bike', errorType: 'first call', errorCode: 'N/A' });
+    expect(ERROR_SEARCHES_ARRAY[1]).toMatchObject({ alias: 'mountain-bike', errorType: 'request', errorCode: 'N/A' });
   });
 
   it('returns empty array when first page has no items and no next page', async () => {
@@ -73,7 +75,7 @@ describe('firstCall', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await firstCall(createSearch({ condition: new Set(['']) }));
+    const result = await request(createSearch({ condition: new Set(['']) }));
 
     expect(result).toEqual([]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -90,7 +92,7 @@ describe('firstCall', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const search = createSearch({ minPrice: '', maxPrice: '', range: '', condition: new Set(['']) });
-    await firstCall(search);
+    await request(search);
 
     const fetchOptions = fetchMock.mock.calls[0][1];
     const calledBody = JSON.parse(fetchOptions.body);
