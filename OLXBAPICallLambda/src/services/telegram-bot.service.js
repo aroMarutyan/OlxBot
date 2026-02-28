@@ -15,12 +15,12 @@ export async function botResponse(text) {
 }
 
 export async function botResponseHTML(text) {
-  await BOT.sendMessage(CHAT_ID, text, { parse_mode: 'HTML'});
+  await BOT.sendMessage(CHAT_ID, text, { parse_mode: 'HTML' });
 }
 
 async function asyncTimeout() {
   return new Promise(resolve => setTimeout(resolve, 1000));
-};
+}
 
 function buildTelegramResponse(item) {
   const itemUrl = 'https://es.wallapop.com/item/' + item.web_slug;

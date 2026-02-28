@@ -6,7 +6,7 @@ const TABLE_NAME = process.env.TABLE_NAME;
 
 export function getTableName() {
   return {
-    TableName: TABLE_NAME,
+    TableName: TABLE_NAME
   }
 }
 
