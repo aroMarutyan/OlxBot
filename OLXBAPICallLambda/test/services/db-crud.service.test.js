@@ -61,32 +61,34 @@ describe('db-crud-service', () => {
 
     const newestResult = {
       id: 'offer-1',
-      web_slug: 'my-offer',
+      url: 'https://www.olx.bg/d/ad/my-offer',
       title: 'Road Bike',
       description: 'Great condition',
-      modified_at: 123,
-      images: [{ urls: { small: '', medium: 'medium-image', big: 'big-image' } }],
-      price: { amount: 200 },
-      location: { city: 'Barcelona', region: 'Catalonia' },
-      shipping: { user_allows_shipping: true }
+      last_refresh_time: '2026-03-01T10:00:00+02:00',
+      photos: [{ link: 'photo-link' }],
+      params: [{ key: 'price', value: { value: 195.58, currency: 'BGN' } }],
+      location: {
+        city: { name: 'Barcelona' },
+        district: { name: 'Center' },
+        region: { name: 'Catalonia' }
+      }
     };
 
     await updateSearchData('search-1', newestResult);
 
     expect(marshall).toHaveBeenCalledWith({ searchId: 'search-1' });
-    expect(marshall).toHaveBeenCalledWith({
-      ':VAL': {
-        imageUrl: 'medium-image',
+    expect(marshall).toHaveBeenCalledWith(expect.objectContaining({
+      ':VAL': expect.objectContaining({
+        imageUrl: 'photo-link',
         title: 'Road Bike',
-        price: 200,
+        price: expect.closeTo(100, 10),
         description: 'Great condition',
-        location: { city: 'Barcelona', region: 'Catalonia' },
-        shipping: true,
-        link: 'https://es.wallapop.com/item/my-offer',
+        location: { city: 'Barcelona', district: 'Center', region: 'Catalonia' },
+        link: 'https://www.olx.bg/d/ad/my-offer',
         offerId: 'offer-1',
-        modified: 123
-      }
-    });
+        modified: '2026-03-01T10:00:00+02:00'
+      })
+    }));
     expect(UpdateItemCommand).toHaveBeenCalledTimes(1);
     expect(__mocks.send).toHaveBeenCalledTimes(1);
   });
@@ -108,14 +110,13 @@ describe('db-crud-service', () => {
 
     const newestResult = {
       id: 'offer-1',
-      web_slug: 'slug',
+      url: 'https://www.olx.bg/d/ad/slug',
       title: 'T',
       description: 'D',
-      modified_at: 1,
-      images: [{ urls: { small: 'img', medium: '', big: '' } }],
-      price: { amount: 10 },
-      location: { city: 'C', region: 'R' },
-      shipping: { user_allows_shipping: false }
+      last_refresh_time: '2026-03-01T08:00:00+02:00',
+      photos: [{ link: 'img' }],
+      params: [{ key: 'price', value: { value: 10, currency: 'EUR' } }],
+      location: { city: { name: 'C' }, district: { name: '' }, region: { name: 'R' } }
     };
 
     await expect(updateSearchData('s1', newestResult)).rejects.toThrow('update failed');

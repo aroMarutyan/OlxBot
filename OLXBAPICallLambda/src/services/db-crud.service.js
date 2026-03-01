@@ -1,5 +1,6 @@
 import { DynamoDBClient, ScanCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { unmarshall, marshall } from '@aws-sdk/util-dynamodb';
+import { getPriceInEurFromParams } from '../utils/price.util.js';
 
 const DDB = new DynamoDBClient({region: 'eu-west-1'});
 const TABLE_NAME = process.env.TABLE_NAME;
@@ -40,14 +41,17 @@ async function updateSearchStringKey(searchId, key, value) {
 
 function remapOffer(item) {
   return {
-    imageUrl: item.images[0].urls.small || item.images[0].urls.medium || item.images[0].urls.big,
+    imageUrl: item.photos?.[0]?.link,
     title: item.title,
-    price: item.price.amount,
+    price: getPriceInEurFromParams(item.params),
     description: item.description,
-    location: { city: item.location.city, region: item.location.region },
-    shipping: item.shipping.user_allows_shipping,
-    link: 'https://es.wallapop.com/item/' + item.web_slug,
+    location: {
+      city: item.location?.city?.name,
+      district: item.location?.district?.name,
+      region: item.location?.region?.name
+    },
+    link: item.url,
     offerId: item.id,
-    modified: item.modified_at
+    modified: item.last_refresh_time
   }
 }

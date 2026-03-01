@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../src/services/api-call.service.js', () => ({
-  firstCall: vi.fn()
+  request: vi.fn()
 }));
 vi.mock('../src/services/telegram-bot.service.js', () => ({
   sendResultsToTelegram: vi.fn()
@@ -16,7 +16,7 @@ vi.mock('../src/services/api-call-error-handler.service.js', () => ({
 }));
 
 import { handler } from '../index.js';
-import { firstCall } from '../src/services/api-call.service.js';
+import { request } from '../src/services/api-call.service.js';
 import { getSearches, updateSearchData } from '../src/services/db-crud.service.js';
 import { sendResultsToTelegram } from '../src/services/telegram-bot.service.js';
 import { displayCurrentInstanceErrors } from '../src/services/api-call-error-handler.service.js';
@@ -31,12 +31,12 @@ describe('handler', () => {
       { searchId: 'active-1', alias: 'a', active: true },
       { searchId: 'inactive-1', alias: 'b', active: false }
     ]);
-    firstCall.mockResolvedValue([]);
+    request.mockResolvedValue([]);
 
     const response = await handler();
 
-    expect(firstCall).toHaveBeenCalledTimes(1);
-    expect(firstCall).toHaveBeenCalledWith({ searchId: 'active-1', alias: 'a', active: true });
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith({ searchId: 'active-1', alias: 'a', active: true });
     expect(updateSearchData).not.toHaveBeenCalled();
     expect(sendResultsToTelegram).not.toHaveBeenCalled();
     expect(displayCurrentInstanceErrors).toHaveBeenCalledTimes(1);
@@ -53,19 +53,20 @@ describe('handler', () => {
         searchId: 'active-2',
         alias: 'search-2',
         active: true,
-        newestOffer: { offerId: 'known-offer', modified: 100 }
+        newestOffer: { offerId: 'known-offer', modified: '2026-03-01T10:00:00+02:00' }
       }
     ]);
 
-    firstCall.mockResolvedValue([
-      { id: 'known-offer', modified_at: 100 },
-      { id: 'offer-2', modified_at: 210 },
-      { id: 'offer-3', modified_at: 150 },
-      { id: 'offer-4', modified_at: 300 },
-      { id: 'offer-5', modified_at: 250 },
-      { id: 'offer-6', modified_at: 180 },
-      { id: 'offer-7', modified_at: 400 },
-      { id: 'old-offer', modified_at: 99 }
+    request.mockResolvedValue([
+      { id: 'known-offer', last_refresh_time: '2026-03-01T10:00:00+02:00' },
+      { id: 'offer-2', last_refresh_time: '2026-03-01T12:10:00+02:00' },
+      { id: 'offer-3', last_refresh_time: '2026-03-01T11:50:00+02:00' },
+      { id: 'offer-4', last_refresh_time: '2026-03-01T13:00:00+02:00' },
+      { id: 'offer-5', last_refresh_time: '2026-03-01T12:50:00+02:00' },
+      { id: 'offer-6', last_refresh_time: '2026-03-01T12:00:00+02:00' },
+      { id: 'offer-7', last_refresh_time: '2026-03-01T14:00:00+02:00' },
+      { id: 'highlighted-offer', last_refresh_time: '2026-03-01T15:00:00+02:00', promotion: { highlighted: true } },
+      { id: 'old-offer', last_refresh_time: '2026-03-01T09:59:00+02:00' }
     ]);
 
     await handler();
@@ -86,13 +87,13 @@ describe('handler', () => {
         searchId: 'active-3',
         alias: 'search-3',
         active: true,
-        newestOffer: { offerId: 'missing-offer', modified: 50 }
+        newestOffer: { offerId: 'missing-offer', modified: '2026-03-01T08:00:00+02:00' }
       }
     ]);
 
-    firstCall.mockResolvedValue([
-      { id: 'new-offer-1', modified_at: 200 },
-      { id: 'new-offer-2', modified_at: 300 }
+    request.mockResolvedValue([
+      { id: 'new-offer-1', last_refresh_time: '2026-03-01T12:00:00+02:00' },
+      { id: 'new-offer-2', last_refresh_time: '2026-03-01T13:00:00+02:00' }
     ]);
 
     await handler();
@@ -101,7 +102,7 @@ describe('handler', () => {
     expect(updateSearchData.mock.calls[0][1].id).toBe('new-offer-1');
 
     expect(sendResultsToTelegram).toHaveBeenCalledTimes(1);
-    expect(sendResultsToTelegram.mock.calls[0][0]).toEqual([{ id: 'new-offer-1', modified_at: 200 }]);
+    expect(sendResultsToTelegram.mock.calls[0][0]).toEqual([{ id: 'new-offer-1', last_refresh_time: '2026-03-01T12:00:00+02:00' }]);
   });
 
   it('does not send results when all items are older than or equal to the last modified date', async () => {
@@ -110,13 +111,13 @@ describe('handler', () => {
         searchId: 'active-4',
         alias: 'search-4',
         active: true,
-        newestOffer: { offerId: 'known-offer', modified: 500 }
+        newestOffer: { offerId: 'known-offer', modified: '2026-03-01T10:00:00+02:00' }
       }
     ]);
 
-    firstCall.mockResolvedValue([
-      { id: 'known-offer', modified_at: 500 },
-      { id: 'old-offer', modified_at: 400 }
+    request.mockResolvedValue([
+      { id: 'known-offer', last_refresh_time: '2026-03-01T10:00:00+02:00' },
+      { id: 'old-offer', last_refresh_time: '2026-03-01T09:00:00+02:00' }
     ]);
 
     await handler();
@@ -130,8 +131,8 @@ describe('handler', () => {
       { searchId: 'new-search', alias: 'first-time', active: true }
     ]);
 
-    firstCall.mockResolvedValue([
-      { id: 'first-result', modified_at: 100 }
+    request.mockResolvedValue([
+      { id: 'first-result', last_refresh_time: '2026-03-01T10:00:00+02:00' }
     ]);
 
     await handler();
@@ -139,6 +140,6 @@ describe('handler', () => {
     expect(updateSearchData).toHaveBeenCalledTimes(1);
     expect(updateSearchData.mock.calls[0][1].id).toBe('first-result');
     expect(sendResultsToTelegram).toHaveBeenCalledTimes(1);
-    expect(sendResultsToTelegram.mock.calls[0][0]).toEqual([{ id: 'first-result', modified_at: 100 }]);
+    expect(sendResultsToTelegram.mock.calls[0][0]).toEqual([{ id: 'first-result', last_refresh_time: '2026-03-01T10:00:00+02:00' }]);
   });
 });

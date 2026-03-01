@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { getPriceInEurFromParams } from '../utils/price.util.js';
 
 const BOT = new TelegramBot(process.env.TOKEN);
 const CHAT_ID = process.env.CHAT_ID;
@@ -23,9 +24,9 @@ async function asyncTimeout() {
 }
 
 function buildTelegramResponse(item) {
-  const itemUrl = 'https://es.wallapop.com/item/' + item.web_slug;
-  const location = `${item.location.city} ${item.location.region}`;
+  const itemUrl = item.url;
+  const location = [item.location?.city?.name, item.location?.district?.name, item.location?.region?.name].filter(Boolean).join(', ');
+  const eurPrice = getPriceInEurFromParams(item.params);
 
-  // check what's the deal with the images
-  return `<a href='${item.images[0].urls.small || item.images[0].urls.medium || item.images[0].urls.big}'> </a> \n<b>TITLE:</b> ${item.title} \n<b>PRICE:</b> ${item.price.amount} \n<b>DESC:</b> ${item.description} \n<b>LOCATION:</b> ${location} \n<b>SHIPPING:</b> ${item.shipping.user_allows_shipping} \n<b>LINK:</b> <a href='${itemUrl}'>CLICK</a>`;
+  return `<a href='${item.photos?.[0]?.link ?? ''}'> </a> \n<b>TITLE:</b> ${item.title} \n<b>PRICE:</b> ${eurPrice} \n<b>DESC:</b> ${item.description} \n<b>LOCATION:</b> ${location} \n<b>LINK:</b> <a href='${itemUrl}'>CLICK</a>`;
 }
