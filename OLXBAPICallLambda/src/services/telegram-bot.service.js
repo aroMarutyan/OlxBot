@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { getPriceInEurFromParams } from '../utils/price.util.js';
 
 const BOT = new TelegramBot(process.env.TOKEN);
 const CHAT_ID = process.env.CHAT_ID;
@@ -25,8 +26,7 @@ async function asyncTimeout() {
 function buildTelegramResponse(item) {
   const itemUrl = item.url;
   const location = [item.location?.city?.name, item.location?.district?.name, item.location?.region?.name].filter(Boolean).join(', ');
-  const price = item.params?.find(param => param.key === 'price')?.value;
-  const eurPrice = price?.currency === 'BGN' ? price.value / 1.9558 : price?.value;
+  const eurPrice = getPriceInEurFromParams(item.params);
 
   return `<a href='${item.photos?.[0]?.link ?? ''}'> </a> \n<b>TITLE:</b> ${item.title} \n<b>PRICE:</b> ${eurPrice} \n<b>DESC:</b> ${item.description} \n<b>LOCATION:</b> ${location} \n<b>LINK:</b> <a href='${itemUrl}'>CLICK</a>`;
 }

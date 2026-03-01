@@ -46,7 +46,7 @@ function getNewestResults(results, newestOfferId, lastModified) {
 function getTimestamp(value) {
   if (typeof value === 'number') return value;
   const timestamp = Date.parse(value ?? '');
-  return Number.isNaN(timestamp) ? 0 : timestamp;
+  return Number.isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
 }
 
 function finalizeLambda() {

@@ -1,5 +1,6 @@
 import { DynamoDBClient, ScanCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { unmarshall, marshall } from '@aws-sdk/util-dynamodb';
+import { getPriceInEurFromParams } from '../utils/price.util.js';
 
 const DDB = new DynamoDBClient({region: 'eu-west-1'});
 const TABLE_NAME = process.env.TABLE_NAME;
@@ -39,11 +40,10 @@ async function updateSearchStringKey(searchId, key, value) {
 }
 
 function remapOffer(item) {
-  const price = item.params?.find(param => param.key === 'price')?.value;
   return {
     imageUrl: item.photos?.[0]?.link,
     title: item.title,
-    price: price?.currency === 'BGN' ? price.value / 1.9558 : price?.value,
+    price: getPriceInEurFromParams(item.params),
     description: item.description,
     location: {
       city: item.location?.city?.name,
