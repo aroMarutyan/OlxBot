@@ -36,22 +36,28 @@ describe('telegram-bot-service', () => {
 
     const results = [
       {
-        web_slug: 'offer-1',
+        url: 'https://www.olx.bg/d/ad/offer-1',
         title: 'Bike 1',
         description: 'Desc',
-        images: [{ urls: { small: 'small-1', medium: 'med-1', big: 'big-1' } }],
-        price: { amount: 100 },
-        location: { city: 'Barcelona', region: 'Catalonia' },
-        shipping: { user_allows_shipping: true }
+        photos: [{ link: 'small-1' }],
+        params: [{ key: 'price', value: { value: 100, currency: 'EUR' } }],
+        location: {
+          city: { name: 'Barcelona' },
+          district: { name: 'Center' },
+          region: { name: 'Catalonia' }
+        }
       },
       {
-        web_slug: 'offer-2',
+        url: 'https://www.olx.bg/d/ad/offer-2',
         title: 'Bike 2',
         description: 'Desc2',
-        images: [{ urls: { small: '', medium: 'med-2', big: 'big-2' } }],
-        price: { amount: 200 },
-        location: { city: 'Girona', region: 'Catalonia' },
-        shipping: { user_allows_shipping: false }
+        photos: [{ link: 'med-2' }],
+        params: [{ key: 'price', value: { value: 195.58, currency: 'BGN' } }],
+        location: {
+          city: { name: 'Girona' },
+          district: { name: '' },
+          region: { name: 'Catalonia' }
+        }
       }
     ];
 
@@ -61,8 +67,11 @@ describe('telegram-bot-service', () => {
 
     expect(sendMessage).toHaveBeenCalledTimes(2);
     expect(sendMessage.mock.calls[0][1]).toContain('<b>TITLE:</b> Bike 1');
-    expect(sendMessage.mock.calls[0][1]).toContain("<a href='https://es.wallapop.com/item/offer-1'>CLICK</a>");
+    expect(sendMessage.mock.calls[0][1]).toContain("<a href='https://www.olx.bg/d/ad/offer-1'>CLICK</a>");
+    expect(sendMessage.mock.calls[0][1]).toContain('<b>LOCATION:</b> Barcelona, Center, Catalonia');
+    expect(sendMessage.mock.calls[1][1]).toContain('<b>PRICE:</b> 100');
     expect(sendMessage.mock.calls[1][1]).toContain("<a href='med-2'>");
+    expect(sendMessage.mock.calls[1][1]).not.toContain('<b>SHIPPING:</b>');
     expect(sendMessage.mock.calls[1][2]).toEqual({ parse_mode: 'HTML' });
   });
 });

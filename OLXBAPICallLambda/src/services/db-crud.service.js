@@ -39,15 +39,19 @@ async function updateSearchStringKey(searchId, key, value) {
 }
 
 function remapOffer(item) {
+  const price = item.params?.find(param => param.key === 'price')?.value;
   return {
-    imageUrl: item.images[0].urls.small || item.images[0].urls.medium || item.images[0].urls.big,
+    imageUrl: item.photos?.[0]?.link,
     title: item.title,
-    price: item.price.amount,
+    price: price?.currency === 'BGN' ? price.value / 1.9558 : price?.value,
     description: item.description,
-    location: { city: item.location.city, region: item.location.region },
-    shipping: item.shipping.user_allows_shipping,
-    link: 'https://es.wallapop.com/item/' + item.web_slug,
+    location: {
+      city: item.location?.city?.name,
+      district: item.location?.district?.name,
+      region: item.location?.region?.name
+    },
+    link: item.url,
     offerId: item.id,
-    modified: item.modified_at
+    modified: item.last_refresh_time
   }
 }
